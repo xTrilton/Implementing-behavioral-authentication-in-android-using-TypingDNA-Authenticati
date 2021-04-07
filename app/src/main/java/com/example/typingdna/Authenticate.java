@@ -4,11 +4,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.Editable;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 import com.android.volley.AuthFailureError;
 import com.typingdna.typingdnarecorderandroid.TypingDNARecorderMobile;
@@ -18,53 +18,43 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.lang.reflect.Array;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class Authenticate extends AppCompatActivity {
-    String typingpattern;
-    String tp;
-    private RequestQueue mRequestQueue;
+public class Authenticate extends AppCompatActivity  {
+
     private TypingDNARecorderMobile tdna;
-    private EditText password;
     private EditText username;
-    private Button btnregister;
+    String tp;
     String id;
-    String Key= "xxx";
-    String Secret= "xxx";
+    String Key= "xxxxxxx85x";
+    String Secret= "xxxxxcex";
     String originalString = Key+":"+Secret;
     String encodedString;
-    TextView showtxt;
-    TextView showtxt1;
-    TextView showtxt2;
+    int clickcount=0;
+    String addmore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        showtxt=findViewById(R.id.showtxt);
-        showtxt1=findViewById(R.id.showtxt1);
-        showtxt2=findViewById(R.id.showtxt2);
+        EditText password = findViewById(R.id.password);
+        username = findViewById(R.id.username);
 
 
+//encoding the apikey and api secret to  base64
         Base64.Encoder encoder = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             encoder = Base64.getEncoder();
             encodedString = encoder.encodeToString(originalString.getBytes());
-
             System.out.println(encodedString);
         }
 
@@ -73,63 +63,66 @@ public class Authenticate extends AppCompatActivity {
         tdna = new TypingDNARecorderMobile(this);
         tdna.start();
 
-        password = findViewById(R.id.password);
-        username = findViewById(R.id.username);
-         String identity=username.getText().toString();
-         id=md5(identity);
-
         //Adds a target to the recorder. You can add multiple elements. All the typing evens will be recorded for this component.
         tdna.addTarget(R.id.password);
+        tdna.addTarget(R.id.username);
 
-        btnregister = (Button) findViewById(R.id.btnregister);
+
+        Button btnregister = (Button) findViewById(R.id.btnregister);
 
         btnregister.setOnClickListener(new View.OnClickListener() {
                                           @Override
                                           public void onClick(View v){
+                                              clickcount=clickcount+1;
+                                              switch (clickcount) {
+                                                    case 1:
+                                                      addmore="please add two more patterns to attain a successful authentication";
+                                                      break;
+
+                                                      case 2:
+                                                          addmore="please add one more patterns to attain a successful authentication";
+                                                          break;
+                                                      case 3:
+                                                      addmore="successfully enrolled, please login";
+                                                      break;
+                                                      case 4:
+                                                          addmore="successful login";
+                                              }
+
+
+                                              //call the authenticate method to start the authentication process
                                              Authenticate();
 
+                                              //guiding the user
 
-                                          }
-                                      }
+                                                      AlertDialog.Builder builder = new AlertDialog.Builder(
+                                                              Authenticate.this);
+                                                      builder.setTitle("Adding Typing pattern");
+                                                      builder.setMessage(addmore);
+                                                      builder.setPositiveButton("OK",
+                                                              new DialogInterface.OnClickListener() {
+                                                                  public void onClick(DialogInterface dialog,
+                                                                                      int which) {
+                                                                      Toast.makeText(getApplicationContext(),"",Toast.LENGTH_LONG).show();
+                                                                  }
+                                                              });
+                                                      builder.show();
+                                                  }
+                                              });
 
-        );
-        Button btnverify= findViewById(R.id.btnverify);
-
-        btnverify.setOnClickListener(new View.OnClickListener() {
-                                          @Override
-                                          public void onClick(View v){
-                                            checkUser();
-
-                                          }
-                                      }
-
-        );
     }
 
 
-
-    public void getTypingPattern(){
-        int type = 1; // 1,2 for diagram pattern (short identical texts - 2 for extended diagram), 0 for any-text typing pattern (random text)
-
-        int length = 0; // (Optional) the length of the text in the history for which you want the typing pattern, 0 = ignore, (works only if text = "")
-        String text = password.getText().toString(); // (Only for type 1 and type 2) a typed string that you want the typing pattern for
-        int textId = 0; // (Optional, only for type 1 and type 2) a personalized id for the typed text, 0 = ignore
-        boolean caseSensitive = false; // (Optional, only for type 1 and type 2) Used only if you pass a text for type 1
-        Integer targetId = password.getId(); //(Optional, only for type 1 and type 2) Specifies if pattern is obtain only from text typed in a certain target
-         tp = tdna.getTypingPattern(type, length, text, textId, targetId, caseSensitive);
-        if(tp != null){
-          // showtxt.setText(tp);
-        } else {
-            Toast toast = Toast.makeText(getApplicationContext(), "no typing pattern found", Toast.LENGTH_SHORT);
-            toast.setMargin(50, 50);
-            toast.show();
-        }
-    }
 
         public  void Authenticate (){
-        //first call the getTypingPattern method to start record the users password before enrolling or verifying
-            getTypingPattern();
+//  getting the users typing pattern.
+            String text ="";
+            tp = tdna.getTypingPattern(0, 0, text,0);
 
+            //hashing the users ID
+            String identity=username.getText().toString();
+            id=md5(identity);
+//sending a post request.
             String posturli = "https://api.typingdna.com/auto/"+id;
             RequestQueue requestQueue = Volley.newRequestQueue(this);
 
@@ -137,8 +130,6 @@ public class Authenticate extends AppCompatActivity {
             try {
                 postData.put("id", id);
                 postData.put("tp", tp);
-
-
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -150,18 +141,19 @@ public class Authenticate extends AppCompatActivity {
                     System.out.println(response);
                     try {
                         JSONObject myJsonObject = new JSONObject(response.toString());
-                        String message = myJsonObject.getString("message");
-                        String action = myJsonObject.getString("action");
-                       String enrollment = myJsonObject.getString("enrollment");
-                       showtxt.setText("action:  " +action);
-                        showtxt1.setText("enrollment: " + enrollment);
-                        showtxt2.setText("message: " +message);
+                        String result = myJsonObject.getString("result");
 
+// during  verification, the matching machine compares the typing pattern that the user provided with the one that is registered and if
+// they match the user successfully logs in.
+                        if(result.equals("1")){
+                            Intent intent= new Intent(Authenticate.this,MainActivity.class);
+                            startActivity(intent);
+                        }
 
                     } catch (JSONException e) {
                         e.printStackTrace();
+                        
                     }
-
 
                 }
             }, new Response.ErrorListener() {
@@ -196,12 +188,6 @@ public class Authenticate extends AppCompatActivity {
                         String message = myJsonObject.getString("message");
                         String  success= myJsonObject.getString("success");
                         String mobilecount = myJsonObject.getString("mobilecount");
-                        showtxt.setText("success:  " +success);
-                        showtxt1.setText("mobilecount" +
-                                "" +
-                                ": " + mobilecount);
-                        showtxt2.setText("message: " +message);
-
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -224,9 +210,7 @@ public class Authenticate extends AppCompatActivity {
 
             requestQueue.add(jsonObjectRequest);
 
-
         }
-
 
     @Override
     protected void onDestroy() {
@@ -254,6 +238,7 @@ public class Authenticate extends AppCompatActivity {
         tdna.start();
         super.onResume();
     }
+
     public String md5(String s) {
         try {
             // Create MD5 Hash
