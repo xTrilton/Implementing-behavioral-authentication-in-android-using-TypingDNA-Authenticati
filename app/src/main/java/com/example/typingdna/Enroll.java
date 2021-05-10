@@ -43,8 +43,7 @@ public class Enroll extends AppCompatActivity  {
     String Secret= "a36f01786ce7344cd617c0b5af8fea35";
     String originalString = Key+":"+Secret;
     String encodedString;
-    String action
-            ="";
+    String action="";
     int clickcount=0;
     String addpattern ="Please add two more patterns to get enrolled";
 
@@ -116,6 +115,7 @@ public class Enroll extends AppCompatActivity  {
     }
 
     public  void Authenticate (){
+        
 //  getting the users typing pattern.
         String text ="";
         tp = tdna.getTypingPattern(1, 0, text,0);
