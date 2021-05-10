@@ -10,9 +10,9 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Register"
+        android:text="Authentication"
         android:textAlignment="center"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="40dp"
         android:textSize="34sp"
         android:textStyle="bold"/>
 
@@ -20,7 +20,7 @@
         android:id="@+id/username1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="60dp"
         android:hint="Username"
         android:selectAllOnFocus="true"
         android:importantForAutofill="no"
@@ -33,8 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:hint="@string/prompt_password"
-        android:importantForAutofill="no"
-        android:inputType="textPassword|textNoSuggestions"
+        android:inputType="textPassword"
         android:imeActionLabel="@string/action_sign_in_short"
         android:selectAllOnFocus="true"
         />
@@ -48,6 +47,19 @@
         android:layout_marginBottom="14dp"
         android:text="register"
         />
+
+    <Button
+        android:id="@+id/login"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
+        android:layout_marginLeft="90dp"
+        android:layout_marginBottom="14dp"
+        android:onClick="Login"
+        android:text="Login"
+        />
+
+
 
 
 </LinearLayout>
