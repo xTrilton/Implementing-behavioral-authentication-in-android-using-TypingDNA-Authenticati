@@ -2,14 +2,18 @@ package com.example.typingdna;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 import com.android.volley.AuthFailureError;
 import com.typingdna.typingdnarecorderandroid.TypingDNARecorderMobile;
@@ -34,10 +38,13 @@ public class Enroll extends AppCompatActivity  {
     String tp;
     String id;
     private EditText password;
+    EditText passwordone;
     String Key= "ae677f305017f0939347eced4d2b085d";
     String Secret= "a36f01786ce7344cd617c0b5af8fea35";
     String originalString = Key+":"+Secret;
     String encodedString;
+    String action
+            ="";
     int clickcount=0;
     String addpattern ="Please add two more patterns to get enrolled";
 
@@ -46,9 +53,11 @@ public class Enroll extends AppCompatActivity  {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
-        EditText password1 = findViewById(R.id.password1);
-        musername = findViewById(R.id.username1);
+         passwordone = findViewById(R.id.password1);
 
+        musername = findViewById(R.id.username1);
+        musername.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS );
+     //password does not have autosuggest
 
 //encoding the apikey and api secret to  base64
         Base64.Encoder encoder = null;
@@ -72,27 +81,34 @@ public class Enroll extends AppCompatActivity  {
         btnregister.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v){
+                if (isConnected()) {
+                    //call the authenticate method to start the authentication process
+                    Authenticate();
 
-                //call the authenticate method to start the authentication process
-                Authenticate();
 
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(
-                        Enroll.this);
-                builder.setTitle("Adding Typing pattern");
-                builder.setMessage(addpattern);
-                builder.setPositiveButton("OK",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,
-                                                int which) {
-                                tdna.reset();
+    AlertDialog.Builder builder = new AlertDialog.Builder(
+            Enroll.this);
+    builder.setTitle("Adding Typing pattern");
+    builder.setMessage(addpattern);
+    builder.setPositiveButton("OK",
+            new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,
+                                    int which) {
+                    tdna.reset();
 
-                                musername.setText("");
-                                password1.setText("");
-                                musername.requestFocus();
-                            }
-                        });
-                builder.show();
+                    musername.setText("");
+                    passwordone.setText("");
+                    musername.requestFocus();
+                }
+            });
+    builder.show();
+
+
+                } else {
+                    Toast.makeText(getApplicationContext(), "No Internet Connection", Toast.LENGTH_SHORT).show();
+                }
+
             }
         });
 
@@ -102,7 +118,7 @@ public class Enroll extends AppCompatActivity  {
     public  void Authenticate (){
 //  getting the users typing pattern.
         String text ="";
-        tp = tdna.getTypingPattern(0, 0, text,0);
+        tp = tdna.getTypingPattern(1, 0, text,0);
 
         //hashing the users ID
         String identity=musername.getText().toString();
@@ -127,36 +143,133 @@ public class Enroll extends AppCompatActivity  {
                 try {
                     JSONObject myJsonObject = new JSONObject(response.toString());
                     String enrollment= myJsonObject.getString("enrollment");
+                    action= myJsonObject.getString("action");
 
 
-                    if(enrollment.equals("1")){
-                        Toast.makeText(getApplicationContext(),"it worked",Toast.LENGTH_LONG).show();
-                        clickcount=clickcount+1;
+                  if (action.equals("verify")|| action.equals("verify;enroll")){
+                      String result = myJsonObject.getString("result");
 
-                        if(clickcount==1){
+                      if (result.equals("1")) {
+                          Toast.makeText(getApplicationContext(), "verified", Toast.LENGTH_LONG).show();
 
-                            addpattern="Please add one more pattern, to get enrolled";
+                     //navigating the user to the home Activity
+                          Intent secondintent= new Intent(Enroll.this,MainActivity.class);
+                          secondintent.putExtra("message_key", "successful verification");
+                          startActivity(secondintent);
+
+                      } else {
+                          Toast.makeText(getApplicationContext(), "verification failed", Toast.LENGTH_LONG).show();
+
+                      }
+                  }
+
+
+                      if (enrollment.equals("1")) {
+                          Toast.makeText(getApplicationContext(), "it worked", Toast.LENGTH_LONG).show();
+                          clickcount = clickcount + 1;
+
+                          if (clickcount == 1) {
+
+                              addpattern = "Please add one more pattern, to get enrolled";
+                          }
+                          if (clickcount == 2) {
+
+                              addpattern = "Done";
+                          }
+
+                          if (clickcount == 3) {
+
+                              Intent intent = new Intent(Enroll.this, MainActivity.class);
+                              intent.putExtra("message_key", "successful enrollment");
+                              startActivity(intent);
+
+                          }
+
+                      }
+                                  else {
+                              Toast.makeText(getApplicationContext(), "enrollment failed", Toast.LENGTH_LONG).show();
+
+                          }
+
+
+                }
+
+                catch (JSONException e) {
+                    Toast.makeText(getApplicationContext(), "invalid typing pattern", Toast.LENGTH_LONG).show();
+                    e.printStackTrace();
+                }
+
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                error.printStackTrace();
+            }
+        }){@Override
+        public Map<String, String> getHeaders() throws AuthFailureError {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json; charset=utf-8");
+            headers.put("Authorization",  "Basic " +encodedString);
+            return headers;
+        }
+        };
+        requestQueue.add(jsonObjectRequest);
+
+    }
+
+    public  void Login(View view){
+//  getting the users typing pattern.
+        String text ="";
+        tp = tdna.getTypingPattern(1, 0, text,0);
+
+        //hashing the users ID
+        String identity=musername.getText().toString();
+        id=md5(identity);
+//sending a post request.
+        String posturli = "https://api.typingdna.com/auto/"+id;
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+
+        JSONObject postData = new JSONObject();
+        try {
+            postData.put("id", id);
+            postData.put("tp", tp);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, posturli, postData, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                System.out.println(response);
+                try {
+                    JSONObject myJsonObject = new JSONObject(response.toString());
+                    String enrollment= myJsonObject.getString("enrollment");
+                    action= myJsonObject.getString("action");
+
+
+                    if (action.equals("verify")|| action.equals("verify;enroll")){
+                        String result = myJsonObject.getString("result");
+
+                        if (result.equals("1")) {
+                            Toast.makeText(getApplicationContext(), "verified", Toast.LENGTH_LONG).show();
+
+                            //navigating the user to the home Activity
+                            Intent secondintent= new Intent(Enroll.this,MainActivity.class);
+                            secondintent.putExtra("message_key", "successful verification");
+                            startActivity(secondintent);
+
+                        } else {
+                            Toast.makeText(getApplicationContext(), "verification failed", Toast.LENGTH_LONG).show();
+
                         }
-                        if (clickcount==2){
-
-                            addpattern="Done";
-                        }
-
-                        if(clickcount==3){
-
-                            Intent intent= new Intent(Enroll.this,MainActivity.class);
-                            intent.putExtra("message_key", "successful enrollment");
-                            startActivity(intent);
-
-                        }
-
-
                     }
 
+                }
 
-                } catch (JSONException e) {
+                catch (JSONException e) {
+                    Toast.makeText(getApplicationContext(), "invalid typing pattern", Toast.LENGTH_LONG).show();
                     e.printStackTrace();
-
                 }
 
             }
@@ -222,4 +335,20 @@ public class Enroll extends AppCompatActivity  {
         }
         return "";
     }
+
+    public boolean isConnected() {
+        boolean connected = false;
+        try {
+            ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo nInfo = cm.getActiveNetworkInfo();
+            connected = nInfo != null && nInfo.isAvailable() && nInfo.isConnected();
+            return connected;
+        } catch (Exception e) {
+            Log.e("Connectivity Exception", e.getMessage());
+        }
+        return connected;
+    }
+
+
+
 }
