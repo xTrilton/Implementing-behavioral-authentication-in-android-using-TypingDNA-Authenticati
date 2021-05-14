@@ -39,8 +39,8 @@ public class Enroll extends AppCompatActivity  {
     String id;
     private EditText password;
     EditText passwordone;
-    String Key= "ae677f305017f0939347eced4d2b085d";
-    String Secret= "a36f01786ce7344cd617c0b5af8fea35";
+    String Key= "enter yours here";
+    String Secret= "enter yours here";
     String originalString = Key+":"+Secret;
     String encodedString;
     String action="";
