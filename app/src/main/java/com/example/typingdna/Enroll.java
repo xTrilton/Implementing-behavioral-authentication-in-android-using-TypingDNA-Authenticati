@@ -1,7 +1,6 @@
 package com.example.typingdna;
 
 import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -9,6 +8,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -35,35 +35,32 @@ public class Enroll extends AppCompatActivity  {
 
     private TypingDNARecorderMobile tdna;
     private EditText musername;
+    EditText passwordone;
     String tp;
     String id;
-    private EditText password;
-    EditText passwordone;
-    String Key= "enter yours here";
-    String Secret= "enter yours here";
+    String usernameandPassword;
+    String Key= "enter api key here";
+    String Secret= "enter api secret here";
     String originalString = Key+":"+Secret;
     String encodedString;
-    String action="";
-    int clickcount=0;
+    String action ="";
     String addpattern ="Please add two more patterns to get enrolled";
-
+    int clickcount=0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
          passwordone = findViewById(R.id.password1);
-
-        musername = findViewById(R.id.username1);
+         musername = findViewById(R.id.username1);
         musername.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS );
-     //password does not have autosuggest
+
 
 //encoding the apikey and api secret to  base64
         Base64.Encoder encoder = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             encoder = Base64.getEncoder();
             encodedString = encoder.encodeToString(originalString.getBytes());
-            System.out.println(encodedString);
         }
 
 
@@ -114,15 +111,81 @@ public class Enroll extends AppCompatActivity  {
 
     }
 
+    public  void checkUser (View view){
+        if (isConnected()) {
+            //hashing the users ID
+
+            String mpassword= passwordone.getText().toString();
+            String username= musername.getText().toString();
+            usernameandPassword = username+mpassword;
+            id = md5(usernameandPassword);
+//sending a post request.
+            String posturli = "https://api.typingdna.com/user/" +id;
+            RequestQueue requestQueue = Volley.newRequestQueue(this);
+
+
+            JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, posturli, null, new Response.Listener<JSONObject>() {
+                @Override
+                public void onResponse(JSONObject response) {
+                    System.out.println(response);
+                    try {
+                        JSONObject myJsonObject = new JSONObject(response.toString());
+                        String mobilecount = myJsonObject.getString("mobilecount");
+
+                        if (!mobilecount.equals("0")) {
+                            final Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // Do something after 5s = 5000ms
+                                    Login();
+                                }
+                            }, 2000);
+
+                        } else {
+                            Toast.makeText(getApplicationContext(), "incorrect username or password", Toast.LENGTH_LONG).show();
+
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    error.printStackTrace();
+                }
+            }) {
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json; charset=utf-8");
+                    headers.put("Authorization", "Basic " + encodedString);
+                    return headers;
+                }
+            };
+            requestQueue.add(jsonObjectRequest);
+
+        }
+        else{
+            Toast.makeText(getApplicationContext(), "no internet connection", Toast.LENGTH_LONG).show();
+
+        }
+
+    }
+
     public  void Authenticate (){
-        
 //  getting the users typing pattern.
-        String text ="";
-        tp = tdna.getTypingPattern(1, 0, text,0);
+        String mpassword = passwordone.getText().toString();
+        String username= musername.getText().toString();
+        usernameandPassword = username+mpassword;
+        tp = tdna.getTypingPattern(1, 0, usernameandPassword,0);
 
         //hashing the users ID
-        String identity=musername.getText().toString();
-        id=md5(identity);
+        id=md5(usernameandPassword);
+
 //sending a post request.
         String posturli = "https://api.typingdna.com/auto/"+id;
         RequestQueue requestQueue = Volley.newRequestQueue(this);
@@ -217,14 +280,16 @@ public class Enroll extends AppCompatActivity  {
 
     }
 
-    public  void Login(View view){
+    public  void Login(){
 //  getting the users typing pattern.
-        String text ="";
-        tp = tdna.getTypingPattern(1, 0, text,0);
 
-        //hashing the users ID
-        String identity=musername.getText().toString();
-        id=md5(identity);
+        String mpassword = passwordone.getText().toString();
+        String username= musername.getText().toString();
+        usernameandPassword = username+mpassword;
+        tp = tdna.getTypingPattern(1, 0, usernameandPassword,0);
+
+        id=md5(usernameandPassword);
+
 //sending a post request.
         String posturli = "https://api.typingdna.com/auto/"+id;
         RequestQueue requestQueue = Volley.newRequestQueue(this);
