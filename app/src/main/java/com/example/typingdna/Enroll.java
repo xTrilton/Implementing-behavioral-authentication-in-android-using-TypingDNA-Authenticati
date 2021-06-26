@@ -35,7 +35,7 @@ public class Enroll extends AppCompatActivity  {
 
     
 //Note: Please Do not embed your API Key or api secret in any client side code.
-    String originalString = api Key+":"+ api Secret;
+    String originalString = apiKey+":"+ apiSecret;
     String encodedString;
     String action ="";
     String tp;
