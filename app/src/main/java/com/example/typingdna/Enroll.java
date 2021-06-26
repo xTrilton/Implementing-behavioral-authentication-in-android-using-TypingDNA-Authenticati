@@ -33,19 +33,19 @@ import java.util.Map;
 
 public class Enroll extends AppCompatActivity  {
 
-    private TypingDNARecorderMobile tdna;
-    private EditText musername;
-    EditText passwordone;
+    
+//Note: Please Do not embed your API Key or api secret in any client side code.
+    String originalString = api Key+":"+ api Secret;
+    String encodedString;
+    String action ="";
     String tp;
     String id;
     String usernameandPassword;
-    String Key= "enter api key here";
-    String Secret= "enter api secret here";
-    String originalString = Key+":"+Secret;
-    String encodedString;
-    String action ="";
     String addpattern ="Please add two more patterns to get enrolled";
     int clickcount=0;
+    private TypingDNARecorderMobile tdna;
+    private EditText musername;
+    EditText passwordone;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
